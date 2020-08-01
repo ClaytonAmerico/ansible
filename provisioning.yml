@@ -1,11 +1,39 @@
 ---
-- hosts: all
+- hosts: database
+  tasks: 
+
+    - name: 'Instala pacotes do sistema operacional'
+      apt:
+        name:
+        - mysql-server-5.6
+        - python-mysqldb
+        state: latest
+      become: yes
+
+    - name: 'Cria o banco do Mysql'
+      mysql_db:
+        name: wordpress_db
+        login_user: root
+        #login_password:
+        state: present
+
+    - name: 'Cria o usuario'
+      mysql_user:
+        login_user: root
+        name: wordpress_user
+        password: '12345'
+        priv: 'wordpress_db.*:ALL'
+        state: present
+
+- hosts: wordpress
+
   handlers:
     - name: restart apache
       service:
         name: apache2
         state: restarted
       become: yes
+      
   tasks: 
     - name: 'Instala pacotes do sistema operacional'
       apt:
@@ -16,8 +44,6 @@
         - php5-gd
         - libssh2-php
         - php5-mcrypt
-        - mysql-server-5.6
-        - python-mysqldb
         - php5-mysql
         state: latest
       become: yes
