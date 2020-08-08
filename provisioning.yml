@@ -1,5 +1,12 @@
 ---
 - hosts: database
+  handlers:
+    - name: restart mysql
+      service:
+        name: mysql
+        state: restarted
+      become: yes
+
   tasks: 
 
     - name: 'Instala pacotes do sistema operacional'
@@ -24,6 +31,19 @@
         password: '12345'
         priv: 'wordpress_db.*:ALL'
         state: present
+        host: "{{ item }}"
+      with_items:
+        - 'localhost'
+        - '127.0.0.1'
+        - '192.168.0.25'
+    
+    - name: 'Configura MSQL para aceitar conexões remotas'
+      copy:
+        src: files/my.cnf
+        dest: /etc/mysql/my.cnf
+      become: yes
+      notify:
+        - restart mysql    
 
 - hosts: wordpress
 
@@ -33,7 +53,7 @@
         name: apache2
         state: restarted
       become: yes
-      
+
   tasks: 
     - name: 'Instala pacotes do sistema operacional'
       apt:
@@ -47,22 +67,7 @@
         - php5-mysql
         state: latest
       become: yes
-
-    - name: 'Cria o banco do Mysql'
-      mysql_db:
-        name: wordpress_db
-        login_user: root
-        #login_password:
-        state: present
-
-    - name: 'Cria o usuario'
-      mysql_user:
-        login_user: root
-        name: wordpress_user
-        password: '12345'
-        priv: 'wordpress_db.*:ALL'
-        state: present
-
+      
     - name: 'Baixa o arquivo de instalacao do Wordpress'
       get_url:
         url: https://wordpress.org/wordpress-5.0.tar.gz
@@ -93,6 +98,7 @@
         - { regex: 'database_name_here', value: 'wordpress_db'}
         - { regex: 'username_here', value: 'wordpress_user'}
         - { regex: 'password_here', value: '12345'}
+        - { regex: 'localhost', value: '192.168.0.26'}
       become: yes
 
     - name: 'Configura apache para servir o worpress'
